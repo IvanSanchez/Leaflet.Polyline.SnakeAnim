@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Leaflet debug page</title>
+
+<link href="http://cdn.leafletjs.com/leaflet/v1.0.0-beta.2/leaflet.css" rel="stylesheet" type="text/css" />
+<!-- <script src="http://cdn.leafletjs.com/leaflet/v1.0.0-beta.2/leaflet.js"></script> -->
+<script src="http://cdn.leafletjs.com/leaflet/v1.0.0-beta.2/leaflet-src.js"></script>
+
+
+<script src="L.Polyline.SnakeAnim.js"></script>
+
+</head>
+<body>
+	<div id="map" style="width: 800px; height: 600px; border: 1px solid #ccc"></div>
+
+	<div><p>Badger badger badger badger badger badger badger<br> badger badger badger badger badger mushroom mushroom!<p>
+	<p>Badger badger badger badger badger badger badger<br> badger badger badger badger badger <button onclick='snake()'>SNAKE! IT'S A SNAKE!</button></p></div>
+
+	<script src="route.js"></script>
+	<script>
+		for (var i = 0, latlngs = [], len = route.length; i < len; i++) {
+			latlngs.push(new L.LatLng(route[i][0], route[i][1]));
+		}
+		var path = new L.Polyline(latlngs);
+
+		var map = new L.Map('map');
+
+		var positron = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
+		}).addTo(map);
+
+
+		map.fitBounds(new L.LatLngBounds(latlngs));
+
+		map.addLayer(new L.Marker(latlngs[0]));
+		map.addLayer(new L.Marker(latlngs[len - 1]));
+
+		map.addLayer(path);
+
+		path.bindPopup("Hello world");
+
+
+		function snake() {
+			path.snakeIn();
+		}
+
+		path.on('snakestart snake snakeend', function(ev){
+			console.log(ev.type);
+		});
+
+
+	</script>
+</body>
+</html>
