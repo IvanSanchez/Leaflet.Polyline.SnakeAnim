@@ -33,7 +33,9 @@ L.Polyline.include({
 
 		if (this._snaking) { return; }
 
-		if ( (!'performance' in window) || ('now' in window.performance) ) {
+		if ( !('performance' in window) ||
+		     !('now' in window.performance) ||
+		     !this._map) {
 			return;
 		}
 
@@ -52,8 +54,9 @@ L.Polyline.include({
 		this._latlngs = [[ this._snakeLatLngs[0][0], this._snakeLatLngs[0][0] ]];
 
 		this._update();
-		L.Util.requestAnimFrame(this._snake, this);
+		this._snake();
 		this.fire('snakestart');
+		return this;
 	},
 
 
@@ -135,5 +138,79 @@ L.Polyline.include({
 L.Polyline.mergeOptions({
 	snakingSpeed: 200	// In pixels/sec
 });
+
+
+
+
+
+L.LayerGroup.include({
+
+	_snakingLayers: [],
+	_snakingLayersDone: 0,
+
+	snakeIn: function() {
+
+		if ( !('performance' in window) ||
+		     !('now' in window.performance) ||
+		     !this._map ||
+		     this._snaking) {
+			return;
+		}
+
+
+		this._snaking = true;
+		this._snakingLayers = [];
+		this._snakingLayersDone = 0;
+		var keys = Object.keys(this._layers);
+		for (var i in keys) {
+			var key = keys[i];
+			this._snakingLayers.push(this._layers[key]);
+		}
+		this.clearLayers();
+
+		this.fire('snakestart');
+		return this._snakeNext();
+	},
+
+
+	_snakeNext: function() {
+
+
+		if (this._snakingLayersDone >= this._snakingLayers.length) {
+			this.fire('snakeend');
+			this._snaking = false;
+			return;
+		}
+
+		var currentLayer = this._snakingLayers[this._snakingLayersDone];
+
+		this._snakingLayersDone++;
+
+		this.addLayer(currentLayer);
+		if ('snakeIn' in currentLayer) {
+			currentLayer.once('snakeend', function(){
+				setTimeout(this._snakeNext.bind(this), this.options.snakingPause);
+			}, this);
+			currentLayer.snakeIn();
+		} else {
+			setTimeout(this._snakeNext.bind(this), this.options.snakingPause);
+		}
+
+
+		this.fire('snake');
+		return this;
+	}
+
+});
+
+
+L.LayerGroup.mergeOptions({
+	snakingPause: 200
+});
+
+
+
+
+
 
 

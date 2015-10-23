@@ -19,11 +19,28 @@
 
 	<script src="route.js"></script>
 	<script>
-		for (var i = 0, latlngs = [], len = route.length; i < len; i++) {
-			latlngs.push(new L.LatLng(route[i][0], route[i][1]));
-		}
+// 		for (var i = 0, latlngs = [], len = route.length; i < len; i++) {
+// 			latlngs.push(new L.LatLng(route[i][0], route[i][1]));
+// 		}
 
-		var path = L.polyline(latlngs);
+		var trd = [63.5, 11],
+		    mad = [40.5, -3.5],
+		    lnd = [51.5, -0.5],
+		    ams = [52.3, 4.75],
+		    vlc = [39.5, -0.5];
+
+
+		var route = L.featureGroup([
+			L.marker(trd),
+			L.polyline([trd, ams]),
+			L.marker(ams),
+			L.polyline([ams, lnd]),
+			L.marker(lnd),
+			L.polyline([lnd, mad]),
+			L.marker(mad),
+			L.polyline([mad, vlc]),
+			L.marker(vlc)
+		]);
 
 		var map = L.map('map');
 
@@ -32,21 +49,18 @@
 		}).addTo(map);
 
 
-		map.fitBounds(L.latLngBounds(latlngs));
+		map.fitBounds(route.getBounds());
 
-		map.addLayer(L.marker(latlngs[0]));
-		map.addLayer(L.marker(latlngs[len - 1]));
+// 		map.addLayer(new L.Marker(latlngs[0]));
+// 		map.addLayer(new L.Marker(latlngs[len - 1]));
 
-		map.addLayer(path);
-
-		path.bindPopup("Hello world");
-
+		map.addLayer(route);
 
 		function snake() {
-			path.snakeIn();
+			route.snakeIn();
 		}
 
-		path.on('snakestart snake snakeend', function(ev){
+		route.on('snakestart snake snakeend', function(ev){
 			console.log(ev.type);
 		});
 
