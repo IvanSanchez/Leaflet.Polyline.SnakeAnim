@@ -5,7 +5,7 @@
     "Iván Sánchez Ortega <ivan@mazemap.no>"
   ],
   "description": "Animates polylines into existence in Leaflet maps",
-  "main": "L.Polyline.SnakeAnim",
+  "main": "L.Polyline.SnakeAnim.js",
   "moduleType": [],
   "keywords": [
     "leaflet",
@@ -21,5 +21,8 @@
     "tests",
     "demo*",
     "route.js"
-  ]
+  ],
+  "resolutions": {
+    "leaflet": "^1.0.0-beta.2"
+  }
 }
