@@ -3,9 +3,9 @@
 
 
 ///// FIXME: Use path._rings instead of path._latlngs???
-///// FIXME: Support polylines instead of just lines
-///// FIXME: Check for performance.now()
 ///// FIXME: Panic if this._map doesn't exist when called.
+///// FIXME: Implement snakeOut()
+///// FIXME: Implement layerGroup.snakeIn() / Out()
 
 
 L.Polyline.include({
@@ -14,7 +14,10 @@ L.Polyline.include({
 	// distance took place.
 	_snakingTimestamp: 0,
 
-	// How many vertices we've already visited
+	// How many rings and vertices we've already visited
+	// Yeah, yeah, "rings" semantically only apply to polygons, but L.Polyline
+	// internally uses that nomenclature.
+	_snakingRings: 0,
 	_snakingVertices: 0,
 
 	// Distance to draw (in screen pixels) since the last vertex
@@ -28,17 +31,25 @@ L.Polyline.include({
 	/// performance.now is not available.
 	snakeIn: function(){
 
-		this._snaking = true;
-		this._snakingTime = performance.now();
-		this._snakingVertices = this._snakingDistance = 0;
+		if (this._snaking) { return; }
 
-		if (!this._snakeLatLngs) {
-			this._snakeLatLngs = this._latlngs;
+		if ( (!'performance' in window) || ('now' in window.performance) ) {
+			return;
 		}
 
-		// Init with just the first (0th) vertex
+		this._snaking = true;
+		this._snakingTime = performance.now();
+		this._snakingVertices = this._snakingRings = this._snakingDistance = 0;
+
+		if (!this._snakeLatLngs) {
+			this._snakeLatLngs = L.Polyline._flat(this._latlngs) ?
+				[ this._latlngs ] :
+				this._latlngs ;
+		}
+
+		// Init with just the first (0th) vertex in a new ring
 		// Twice because the first thing that this._snake is is chop the head.
-		this._latlngs = [ this._snakeLatLngs[0], this._snakeLatLngs[0] ];
+		this._latlngs = [[ this._snakeLatLngs[0][0], this._snakeLatLngs[0][0] ]];
 
 		this._update();
 		L.Util.requestAnimFrame(this._snake, this);
@@ -54,7 +65,7 @@ L.Polyline.include({
 		this._snakingTime = now;
 
 		// Chop the head from the previous frame
-		this._latlngs.pop();
+		this._latlngs[ this._snakingRings ].pop();
 
 		return this._snakeForward(forward);
 	},
@@ -63,9 +74,9 @@ L.Polyline.include({
 
 		// Calculate distance from current vertex to next vertex
 		var currPoint = this._map.latLngToContainerPoint(
-			this._snakeLatLngs[ this._snakingVertices ]);
+			this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices ]);
 		var nextPoint = this._map.latLngToContainerPoint(
-			this._snakeLatLngs[ this._snakingVertices + 1 ]);
+			this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices + 1 ]);
 
 		var distance = currPoint.distanceTo(nextPoint);
 
@@ -75,10 +86,18 @@ L.Polyline.include({
 		if (this._snakingDistance + forward > distance) {
 			// Jump to next vertex
 			this._snakingVertices++;
-			this._latlngs.push( this._snakeLatLngs[ this._snakingVertices ] );
+			this._latlngs[ this._snakingRings ].push( this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices ] );
 
-			if (this._snakingVertices >= this._snakeLatLngs.length - 1 ) {
-				return this._snakeEnd();
+			if (this._snakingVertices >= this._snakeLatLngs[ this._snakingRings ].length - 1 ) {
+				if (this._snakingRings >= this._snakeLatLngs.length - 1 ) {
+					return this._snakeEnd();
+				} else {
+					this._snakingVertices = 0;
+					this._snakingRings++;
+					this._latlngs[ this._snakingRings ] = [
+						this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices ]
+					];
+				}
 			}
 
 			this._snakingDistance -= distance;
@@ -95,7 +114,7 @@ L.Polyline.include({
 
 		// Put a new head in place.
 		var headLatLng = this._map.containerPointToLatLng(headPoint);
-		this._latlngs.push(headLatLng);
+		this._latlngs[ this._snakingRings ].push(headLatLng);
 
 		this.setLatLngs(this._latlngs);
 		this.fire('snake');
