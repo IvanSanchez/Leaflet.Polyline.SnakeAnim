@@ -1,0 +1,25 @@
+{
+  "name": "Leaflet.Polyline.SnakeAnim",
+  "homepage": "https://github.com/IvanSanchez/Leaflet.Polyline.SnakeAnim",
+  "authors": [
+    "Iván Sánchez Ortega <ivan@mazemap.no>"
+  ],
+  "description": "Animates polylines into existence in Leaflet maps",
+  "main": "L.Polyline.SnakeAnim",
+  "moduleType": [],
+  "keywords": [
+    "leaflet",
+    "animation",
+    "polyline"
+  ],
+  "license": "Beerware",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "demo*",
+    "route.js"
+  ]
+}
