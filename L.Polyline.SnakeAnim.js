@@ -44,7 +44,8 @@ L.Polyline.include({
 		this._snakingVertices = this._snakingRings = this._snakingDistance = 0;
 
 		if (!this._snakeLatLngs) {
-			this._snakeLatLngs = L.Polyline._flat(this._latlngs) ?
+			this._flatLatLngs = L.Polyline._flat(this._latlngs);
+			this._snakeLatLngs = this._flatLatLngs ?
 				[ this._latlngs ] :
 				this._latlngs ;
 		}
@@ -126,7 +127,9 @@ L.Polyline.include({
 
 	_snakeEnd: function() {
 
-		this.setLatLngs(this._snakeLatLngs);
+		this.setLatLngs(this._flatLatLngs ?
+					this._snakeLatLngs[0]:
+					this._snakeLatLngs);
 		this._snaking = false;
 		this.fire('snakeend');
 
