@@ -74,6 +74,8 @@ L.Polyline.include({
 	},
 
 	_snakeForward: function(forward) {
+		
+		if (!this._map) return;
 
 		// Calculate distance from current vertex to next vertex
 		var currPoint = this._map.latLngToContainerPoint(
