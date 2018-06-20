@@ -108,8 +108,8 @@ L.Polyline.include({
 		}
 
 		this._snakingDistance += forward;
-
-		var percent = this._snakingDistance / distance;
+		
+		let percent = distance ? this._snakingDistance / distance : 0;
 
 		var headPoint = nextPoint.multiplyBy(percent).add(
 			currPoint.multiplyBy( 1 - percent )
