@@ -1,6 +1,5 @@
 # Leaflet.Polyline.SnakeAnim
 
-
 A plugin for [LeafletJS](http://www.leafletjs.com) to make polylines animate into existence.
 
 
@@ -13,7 +12,7 @@ Also works on layer groups:
 
 ![Screencapture GIF](demo-group.gif)
 
-Works only with Leaflet 1.0.0-beta2 or higher. Does **not** work with Leaflet 0.7.x.
+Current version works only with Leaflet 1.1 or higher.
 
 ### API
 
