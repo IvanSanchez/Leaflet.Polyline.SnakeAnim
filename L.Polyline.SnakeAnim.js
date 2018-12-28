@@ -44,7 +44,7 @@ L.Polyline.include({
 		this._snakingVertices = this._snakingRings = this._snakingDistance = 0;
 
 		if (!this._snakeLatLngs) {
-			this._snakeLatLngs = L.LineUtil._flat(this._latlngs) ?
+			this._snakeLatLngs = L.LineUtil.isFlat(this._latlngs) ?
 				[ this._latlngs ] :
 				this._latlngs ;
 		}
