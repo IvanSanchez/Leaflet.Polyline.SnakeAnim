@@ -74,6 +74,8 @@ L.Polyline.include({
 	},
 
 	_snakeForward: function(forward) {
+		
+		if (!this._map) return;
 
 		// If polyline has been removed from the map stop _snakeForward
 		if (!this._map) return;
@@ -110,8 +112,8 @@ L.Polyline.include({
 		}
 
 		this._snakingDistance += forward;
-
-		var percent = this._snakingDistance / distance;
+		
+		let percent = distance ? this._snakingDistance / distance : 0;
 
 		var headPoint = nextPoint.multiplyBy(percent).add(
 			currPoint.multiplyBy( 1 - percent )
@@ -209,6 +211,12 @@ L.LayerGroup.include({
 L.LayerGroup.mergeOptions({
 	snakingPause: 200
 });
+
+
+/*"THE BEER-WARE LICENSE":
+<ivan@sanchezortega.es> wrote this file. As long as you retain this notice you
+can do whatever you want with this stuff. If we meet some day, and you think
+this stuff is worth it, you can buy me a beer in return.*/
 
 
 
