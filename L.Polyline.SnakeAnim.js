@@ -64,6 +64,7 @@ L.Polyline.include({
 
 		var now = performance.now();
 		var diff = now - this._snakingTime;	// In milliseconds
+		diff = (diff == 0 ? 0.001 : diff) // avoids low time resolution issues in some browsers
 		var forward = diff * this.options.snakingSpeed / 1000;	// In pixels
 		this._snakingTime = now;
 
@@ -74,7 +75,7 @@ L.Polyline.include({
 	},
 
 	_snakeForward: function(forward) {
-
+		// Avoid divide by zero bug 
 		// If polyline has been removed from the map stop _snakeForward
 		if (!this._map) return;
 		// Calculate distance from current vertex to next vertex
