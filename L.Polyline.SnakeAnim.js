@@ -1,6 +1,7 @@
-
-
-
+/*"THE BEER-WARE LICENSE":
+<ivan@sanchezortega.es> wrote this file. As long as you retain this notice you
+can do whatever you want with this stuff. If we meet some day, and you think
+this stuff is worth it, you can buy me a beer in return.*/
 
 ///// FIXME: Use path._rings instead of path._latlngs???
 ///// FIXME: Panic if this._map doesn't exist when called.
@@ -64,6 +65,7 @@ L.Polyline.include({
 
 		var now = performance.now();
 		var diff = now - this._snakingTime;	// In milliseconds
+		diff = (diff === 0 ? 0.001 : diff) // avoids low time resolution issues in some browsers
 		var forward = diff * this.options.snakingSpeed / 1000;	// In pixels
 		this._snakingTime = now;
 
@@ -137,11 +139,10 @@ L.Polyline.include({
 });
 
 
+
 L.Polyline.mergeOptions({
 	snakingSpeed: 200	// In pixels/sec
 });
-
-
 
 
 
@@ -177,7 +178,6 @@ L.LayerGroup.include({
 
 	_snakeNext: function() {
 
-
 		if (this._snakingLayersDone >= this._snakingLayers.length) {
 			this.fire('snakeend');
 			this._snaking = false;
@@ -206,13 +206,7 @@ L.LayerGroup.include({
 });
 
 
+
 L.LayerGroup.mergeOptions({
 	snakingPause: 200
 });
-
-
-
-
-
-
-
