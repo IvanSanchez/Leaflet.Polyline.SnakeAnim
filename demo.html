@@ -17,8 +17,9 @@
 <body>
 	<div id="map" style="width: 800px; height: 600px; border: 1px solid #ccc"></div>
 
-	<div><p>Badger badger badger badger badger badger badger<br> badger badger badger badger badger mushroom mushroom!<p>
-	<p>Badger badger badger badger badger badger badger<br> badger badger badger badger badger <button onclick='snake()'>SNAKE! IT'S A SNAKE!</button></p></div>
+	<div>
+		<button onclick='snake()'>SNAKE! IT'S A SNAKE!</button><button onclick='snakeFollow()'>SNAKE! FOLLOW MY HEAD!</button>
+	</div>
 
 	<script src="route.js"></script>
 	<script>
@@ -46,6 +47,12 @@
 
 
 		function snake() {
+			path.options.followHead = false;
+			path.snakeIn();
+		}
+
+		function snakeFollow(){
+			path.options.followHead = true; //this can be setup during polyline creation
 			path.snakeIn();
 		}
 

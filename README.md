@@ -21,7 +21,10 @@ trigger the animation.
 
 New option in `L.Polyline`: `snakingSpeed`. This is the speed of the animation,
 in pixels per second. Pixels refer to the length of the polyline at the current
-zoom level. The default value is 200.
+zoom level. The default value is `200`.
+
+New option in `L.Polyline`: `followHead`. This is to keep the map centered
+on the head. The default value is `false`.
 
 New option in `L.LayerGroup`: `snakingPause`. This is the number of milliseconds
 to wait between layers in the group when doing a snaking animation.

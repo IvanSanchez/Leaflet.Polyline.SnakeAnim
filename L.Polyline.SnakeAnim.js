@@ -87,8 +87,8 @@ L.Polyline.include({
 
 		var distance = currPoint.distanceTo(nextPoint);
 
-// 		console.log('Distance to next point:', distance, '; Now at: ', this._snakingDistance, '; Must travel forward:', forward);
-// 		console.log('Vertices: ', this._latlngs);
+//		console.log('Distance to next point:', distance, '; Now at: ', this._snakingDistance, '; Must travel forward:', forward, '_snakingTime', this._snakingTime, '_snakingVertices', this._snakingVertices);
+//		console.log('Snake vertices: ', this._latlngs,';this._snakeLatLngs',this._snakeLatLngs);
 
 		if (this._snakingDistance + forward > distance) {
 			// Jump to next vertex
@@ -122,6 +122,9 @@ L.Polyline.include({
 		// Put a new head in place.
 		var headLatLng = this._map.containerPointToLatLng(headPoint);
 		this._latlngs[ this._snakingRings ].push(headLatLng);
+		if(this.options.followHead){
+			this._map.setView(headLatLng);
+		}
 
 		this.setLatLngs(this._latlngs);
 		this.fire('snake');
@@ -141,7 +144,8 @@ L.Polyline.include({
 
 
 L.Polyline.mergeOptions({
-	snakingSpeed: 200	// In pixels/sec
+	snakingSpeed: 200,	// In pixels/sec
+	followHead: false	// center the map on the head
 });
 
 
