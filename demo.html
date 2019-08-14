@@ -18,7 +18,12 @@
 	<div id="map" style="width: 800px; height: 600px; border: 1px solid #ccc"></div>
 
 	<div>
-		<button onclick='snake()'>SNAKE! IT'S A SNAKE!</button><button onclick='snakeFollow()'>SNAKE! FOLLOW MY HEAD!</button>
+		<p></p>
+		<button onclick='snake()'>SNAKE! IT'S A SNAKE!</button><button onclick='snakeOut()'>SNAKE! GO OUT!</button>
+	</div>
+	<div>
+		<p>Follow head: <input type="checkbox" id="checkFollowHead" onclick="snakeFollow()"></p>
+		<button onclick='snakeLaunch()'>LAUNCH A SNAKE!</button><button onclick='snakeReset()'>RESET THE SNAKE!</button>
 	</div>
 
 	<script src="route.js"></script>
@@ -26,6 +31,17 @@
 		for (var i = 0, latlngs = [], len = route.length; i < len; i++) {
 			latlngs.push(new L.LatLng(route[i][0], route[i][1]));
 		}
+		// Shorter paths for development
+		//var latlngs = [new L.LatLng(51,0), new L.LatLng(52,0), new L.LatLng(52,1), new L.LatLng(51,1), new L.LatLng(51.5,0.5)];
+		/*var latlngs = [
+			[[45.51, -122.68],
+				[37.77, -122.43],
+				[34.04, -118.2]],
+			[[40.78, -73.91],
+				[41.83, -87.62],
+				[32.76, -96.72]]
+		];*/
+		//var len = latlngs.length;
 
 		var path = L.polyline(latlngs);
 
@@ -47,16 +63,31 @@
 
 
 		function snake() {
-			path.options.followHead = false;
 			path.snakeIn();
 		}
 
+		function snakeOut(){
+			path.snakeOut();
+		}
+
+		var checkBoxHead = document.getElementById("checkFollowHead");
+		snakeFollow();
 		function snakeFollow(){
-			path.options.followHead = true; //this can be setup during polyline creation
-			path.snakeIn();
+			path.options.followHead = checkBoxHead.checked; //this can be setup during polyline creation
 		}
 
-		path.on('snakestart snake snakeend', function(ev){
+		function snakeLaunch(){
+			path.snakeIn();
+			setTimeout(function () {
+				path.snakeOut();
+			}, 1000)
+		}
+
+		function snakeReset(){
+			path.snakeReset();
+		}
+
+		path.on('snakeInStart snakeOutStart snake snakeInEnd snakeOutEnd', function(ev){
 			console.log(ev.type);
 		});
 
