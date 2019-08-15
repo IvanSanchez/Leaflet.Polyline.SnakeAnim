@@ -17,9 +17,14 @@
 <body>
 	<div id="map" style="width: 800px; height: 600px; border: 1px solid #ccc"></div>
 
-	<div>
-		<button onclick='snake()'>SNAKE! IT'S A SNAKE!</button><button onclick='snakeFollow()'>SNAKE! FOLLOW MY HEAD!</button>
-	</div>
+    <div>
+        <p></p>
+        <button onclick='snake()'>SNAKE! IT'S A SNAKE!</button><button onclick='snakeOut()'>SNAKE! GO OUT!</button>
+    </div>
+    <div>
+        <p>Follow head: <input type="checkbox" id="checkFollowHead" onclick="snakeFollow()">Remove markers: <input type="checkbox" id="checkRemoveMarkers" onclick="snakeRemoveMarkers()"></p>
+        <button onclick='snakeLaunch()'>LAUNCH A SNAKE!</button><button onclick='snakeReset()'>RESET THE SNAKE!</button>
+    </div>
 
 	<script src="route.js"></script>
 	<script>
@@ -61,24 +66,46 @@
 		map.addLayer(route);
 
 		function snake() {
-			route.eachLayer(function (layer) {
-				if(layer instanceof L.Path){
-					layer.options.followHead = false;
-				}
-			});
 			route.snakeIn();
 		}
 
+		function snakeOut() {
+			route.snakeOut();
+		}
+
+        var checkBoxHead = document.getElementById("checkFollowHead");
+        snakeFollow();
 		function snakeFollow(){
-			route.eachLayer(function (layer) { // this can be setup during polyline creation
-				if(layer instanceof L.Path){
-					layer.options.followHead = true;
+			route._snakingLayers.forEach(function (layer) {
+				if(layer instanceof L.Polyline){ // this can also be setup during polyline creation
+					layer.options.followHead = checkBoxHead.checked;
 				}
 			});
-			route.snakeIn();
+			route.getLayers().forEach(function (layer) {
+				if(layer instanceof L.Polyline){ // this can also be setup during polyline creation
+					layer.options.followHead = checkBoxHead.checked;
+				}
+			});
 		}
 
-		route.on('snakestart snake snakeend', function(ev){
+		var checkRemoveMarkers = document.getElementById("checkRemoveMarkers");
+		snakeRemoveMarkers();
+		function snakeRemoveMarkers(){
+			route.options.snakeRemoveLayers = checkRemoveMarkers.checked;
+		}
+
+		function snakeLaunch(){
+			route.snakeIn();
+			setTimeout(function () {
+				route.snakeOut();
+			}, 1000)
+		}
+
+		function snakeReset(){
+			route.snakeReset();
+		}
+
+		route.on('snakeInStart snakeOutStart snake snakeInEnd snakeOutEnd', function(ev){
 			console.log(ev.type);
 		});
 

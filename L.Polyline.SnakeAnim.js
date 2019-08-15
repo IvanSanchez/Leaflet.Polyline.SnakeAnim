@@ -5,8 +5,6 @@ this stuff is worth it, you can buy me a beer in return.*/
 
 ///// FIXME: Use path._rings instead of path._latlngs???
 ///// FIXME: Panic if this._map doesn't exist when called.
-///// FIXME: Implement layerGroup.snakeIn() / Out()
-
 
 L.Polyline.include({
 
@@ -259,6 +257,7 @@ L.Polyline.include({
 		this.fire('snakeend'); // to depreciate
 		this.fire('snakeInEnd');
 
+		return this;
 	},
 
 	_snakeOutEnd: function() {
@@ -266,15 +265,17 @@ L.Polyline.include({
 		this._snakingOut = false;
 		this.fire('snakeOutEnd');
 
+		return this;
 	},
 
-	_snakeReset: function () {
+	snakeReset: function () {
 
 		this._snakingIn = this._snakingOut = false;
 		if(this._snakeLatLngs){
 			this.setLatLngs(this._snakeLatLngs);
 		}
 
+		return this;
 	}
 
 });
@@ -292,37 +293,80 @@ L.LayerGroup.include({
 
 	_snakingLayers: [],
 	_snakingLayersDone: 0,
+	_snakingTailLayersDone: 0,
+	_snakingIn: false,
+	_snakingOut: false,
+
+	// used to cancel timeouts for snakeReset()
+	_snakeTimeoutsId: [],
 
 	snakeIn: function() {
 
 		if ( !('performance' in window) ||
 		     !('now' in window.performance) ||
 		     !this._map ||
-		     this._snaking) {
+		     this._snakingIn || this._snakingOut) {
 			return;
 		}
 
-
-		this._snaking = true;
-		this._snakingLayers = [];
+		this._snakingIn = true;
 		this._snakingLayersDone = 0;
+		if(this._snakingLayers.length === 0){
+			this._initSnakingLayers();
+		}
+		if(this.options.snakeRemoveLayers){
+			this.clearLayers();
+		}else {
+			for(var currentLayer in this._snakingLayers){
+				if(this._snakingLayers[currentLayer] instanceof L.Polyline){ // remove only paths
+					this.removeLayer(this._snakingLayers[currentLayer]);
+				}
+			}
+		}
+
+		this.fire('snakestart');
+		this.fire('snakeInStart');
+		return this._snakeHeadNext();
+	},
+
+	snakeOut: function() {
+
+		if ( !('performance' in window) ||
+			!('now' in window.performance) ||
+			!this._map ||
+			this._snakingOut) {
+			return;
+		}
+
+		if(!this._snakingIn){
+			snakeReset();
+		}
+
+		this._snakingOut = true;
+		this._snakingTailLayersDone = 0;
+
+		this.fire('snakeOutStart');
+		return this._snakeTailNext();
+	},
+
+	_initSnakingLayers: function() {
+		// Copy layers ref in _snakingLayers
 		var keys = Object.keys(this._layers);
 		for (var i in keys) {
 			var key = keys[i];
 			this._snakingLayers.push(this._layers[key]);
 		}
-		this.clearLayers();
-
-		this.fire('snakestart');
-		return this._snakeNext();
+		return this;
 	},
 
+	_snakeHeadNext: function() {
 
-	_snakeNext: function() {
+		if(!this._snakingIn){ return  this; }
 
 		if (this._snakingLayersDone >= this._snakingLayers.length) {
 			this.fire('snakeend');
-			this._snaking = false;
+			this.fire('snakeInEnd');
+			this._snakingIn = false;
 			return;
 		}
 
@@ -330,18 +374,77 @@ L.LayerGroup.include({
 
 		this._snakingLayersDone++;
 
-		this.addLayer(currentLayer);
+		if(!this.getLayer(currentLayer)){ // avoid layer duplications
+			this.addLayer(currentLayer);
+		}
+
 		if ('snakeIn' in currentLayer) {
-			currentLayer.once('snakeend', function(){
-				setTimeout(this._snakeNext.bind(this), this.options.snakingPause);
+			currentLayer.once('snakeInEnd', function(){
+				this._snakeTimeoutsId.push(setTimeout(this._snakeHeadNext.bind(this), this.options.snakingPause));
 			}, this);
 			currentLayer.snakeIn();
 		} else {
-			setTimeout(this._snakeNext.bind(this), this.options.snakingPause);
+			this._snakeTimeoutsId.push(setTimeout(this._snakeHeadNext.bind(this), this.options.snakingPause));
 		}
 
 
 		this.fire('snake');
+		return this;
+	},
+
+	_snakeTailNext: function() {
+
+		if(!this._snakingOut){ return  this; }
+
+		if(this.options.snakeRemoveLayers) {
+			this.removeLayer(this._snakingLayers[this._snakingTailLayersDone-1]);
+		}
+
+		if (this._snakingTailLayersDone >= this._snakingLayers.length) {
+			this.fire('snakeOutEnd');
+			this._snakingOut = false;
+			return;
+		}
+		var currentLayer = this._snakingLayers[this._snakingTailLayersDone];
+
+		this._snakingTailLayersDone++;
+
+
+		if ('snakeOut' in currentLayer) {
+			currentLayer.once('snakeOutEnd', function(){
+				this._snakeTimeoutsId.push(setTimeout(this._snakeTailNext.bind(this), this.options.snakingPause));
+			}, this);
+			currentLayer.snakeOut();
+		} else {
+			this._snakeTimeoutsId.push(setTimeout(this._snakeTailNext.bind(this), this.options.snakingPause));
+		}
+
+		this.fire('snake');
+		return this;
+	},
+
+	snakeReset: function() {
+
+		this._snakingIn = false;
+		this._snakingOut = false;
+		if(this._snakingLayers.length === 0){
+			this._initSnakingLayers();
+		}
+
+		for (var id in this._snakeTimeoutsId) {
+			clearTimeout(id);
+		}
+		this._snakeTimeoutsId = [];
+
+		for(var currentLayer in this._snakingLayers){
+			if(this._snakingLayers[currentLayer] instanceof L.Polyline){
+				this._snakingLayers[currentLayer].snakeReset();
+			}
+			// Maybe we need to keep layer order
+			if(!this.getLayer(this._snakingLayers[currentLayer])){
+				this.addLayer(this._snakingLayers[currentLayer]);
+			}
+		}
 		return this;
 	}
 
@@ -350,5 +453,6 @@ L.LayerGroup.include({
 
 
 L.LayerGroup.mergeOptions({
-	snakingPause: 200
+	snakingPause: 200,
+	snakeRemoveLayers: true // should layers (other than polylines) desapear
 });
