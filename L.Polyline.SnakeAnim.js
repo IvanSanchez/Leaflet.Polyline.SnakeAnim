@@ -1,6 +1,7 @@
 /*"THE BEER-WARE LICENSE":
-<ivan@sanchezortega.es> wrote this file. As long as you retain this notice you
-can do whatever you want with this stuff. If we meet some day, and you think
+<ivan@sanchezortega.es> originaly wrote this file.
+Later, <pitou.games@gmail.com> enhanced this file, in order to add more feature.
+As long as you retain this notice you can do whatever you want with this stuff. If we meet some day, and you think
 this stuff is worth it, you can buy me a beer in return.*/
 
 ///// FIXME: Use path._rings instead of path._latlngs???
@@ -84,9 +85,9 @@ L.Polyline.include({
 
 		if(!this._snakingIn){
 			//need to do a deep copy
-			var tempArray = [];
-			var keys = Object.keys(this._snakeLatLngs);
-			for (var i in keys) {
+			let tempArray = [];
+			let keys = Object.keys(this._snakeLatLngs);
+			for (let i in keys) {
 				tempArray.push([]);
 				this._snakeLatLngs[tempArray.length - 1].forEach(function(entry) {
 					tempArray[tempArray.length - 1].push( [entry.lat, entry.lng] );
@@ -108,10 +109,10 @@ L.Polyline.include({
 		// If polyline has been removed from the map stop _snakeForward
 		if (!this._map) return;
 
-		var now = performance.now();
-		var diff = now - this._snakingTime;	// In milliseconds
+		let now = performance.now();
+		let diff = now - this._snakingTime;	// In milliseconds
 		diff = (diff === 0 ? 0.001 : diff); // avoids low time resolution issues in some browsers
-		var forward = diff * this.options.snakingSpeed / 1000;	// In pixels
+		let forward = diff * this.options.snakingSpeed / 1000;	// In pixels
 		this._snakingTime = now;
 
 		// Chop the head from the previous frame
@@ -143,12 +144,12 @@ L.Polyline.include({
 	_snakeHeadForward: function(forward) {
 
 		// Calculate distance from current vertex to next vertex
-		var currPoint = this._map.latLngToContainerPoint(
+		let currPoint = this._map.latLngToContainerPoint(
 			this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices ]);
-		var nextPoint = this._map.latLngToContainerPoint(
+		let nextPoint = this._map.latLngToContainerPoint(
 			this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices + 1 ]);
 
-		var distance = currPoint.distanceTo(nextPoint);
+		let distance = currPoint.distanceTo(nextPoint);
 
 		//console.log('Distance head to next point:', distance, '; Now at: ', this._snakingDistance, '; Must travel forward:', forward, '_snakingTime', this._snakingTime, '_snakingVertices', this._snakingVertices);
 		//console.log('Snake vertices: ', this._latlngs,';this._snakeLatLngs',this._snakeLatLngs);
@@ -180,14 +181,14 @@ L.Polyline.include({
 
 		this._snakingDistance += forward;
 
-		var percent = this._snakingDistance / distance;
+		let percent = this._snakingDistance / distance;
 
-		var headPoint = nextPoint.multiplyBy(percent).add(
+		let headPoint = nextPoint.multiplyBy(percent).add(
 			currPoint.multiplyBy( 1 - percent )
 		);
 
 		// Put a new head in place.
-		var headLatLng = this._map.containerPointToLatLng(headPoint);
+		let headLatLng = this._map.containerPointToLatLng(headPoint);
 		this._latlngs[ this._snakingRings ].push(headLatLng);
 		if(this.options.followHead){
 			this._map.setView(headLatLng);
@@ -198,12 +199,12 @@ L.Polyline.include({
 
 	_snakeTailForward: function(forward) {
 		// Calculate distance from current vertex to next vertex
-		var currPoint = this._map.latLngToContainerPoint(
+		let currPoint = this._map.latLngToContainerPoint(
 			this._snakeLatLngs[ this._snakingTailRings ][ this._snakingTailVertices ]);
-		var nextPoint = this._map.latLngToContainerPoint(
+		let nextPoint = this._map.latLngToContainerPoint(
 			this._snakeLatLngs[ this._snakingTailRings ][ this._snakingTailVertices + 1 ]);
 
-		var distance = currPoint.distanceTo(nextPoint);
+		let distance = currPoint.distanceTo(nextPoint);
 
 		//console.log('Distance tail to next point:', distance, '; Now at: ', this._snakingTailDistance, '; Must travel forward:', forward, '; _snakingTime', this._snakingTime, '; _snakingTailVertices', this._snakingTailVertices);
 		//console.log('Snake vertices: ', this._latlngs,';this._snakeLatLngs',this._snakeLatLngs);
@@ -234,14 +235,14 @@ L.Polyline.include({
 
 		this._snakingTailDistance += forward;
 
-		var percent = this._snakingTailDistance / distance;
+		let percent = this._snakingTailDistance / distance;
 
-		var tailPoint = nextPoint.multiplyBy(percent).add(
+		let tailPoint = nextPoint.multiplyBy(percent).add(
 			currPoint.multiplyBy( 1 - percent )
 		);
 
 		// Put a new tail in place.
-		var tailLatLng = this._map.containerPointToLatLng(tailPoint);
+		let tailLatLng = this._map.containerPointToLatLng(tailPoint);
 		this._latlngs[ this._snakingTailRings ].unshift(tailLatLng);
 
 		return this;
@@ -317,7 +318,7 @@ L.LayerGroup.include({
 		if(this.options.snakeRemoveLayers){
 			this.clearLayers();
 		}else {
-			for(var currentLayer in this._snakingLayers){
+			for(let currentLayer in this._snakingLayers){
 				if(this._snakingLayers[currentLayer] instanceof L.Polyline){ // remove only paths
 					this.removeLayer(this._snakingLayers[currentLayer]);
 				}
@@ -351,9 +352,9 @@ L.LayerGroup.include({
 
 	_initSnakingLayers: function() {
 		// Copy layers ref in _snakingLayers
-		var keys = Object.keys(this._layers);
-		for (var i in keys) {
-			var key = keys[i];
+		let keys = Object.keys(this._layers);
+		for (let i in keys) {
+			let key = keys[i];
 			this._snakingLayers.push(this._layers[key]);
 		}
 		return this;
@@ -370,7 +371,7 @@ L.LayerGroup.include({
 			return;
 		}
 
-		var currentLayer = this._snakingLayers[this._snakingLayersDone];
+		let currentLayer = this._snakingLayers[this._snakingLayersDone];
 
 		this._snakingLayersDone++;
 
@@ -405,7 +406,7 @@ L.LayerGroup.include({
 			this._snakingOut = false;
 			return;
 		}
-		var currentLayer = this._snakingLayers[this._snakingTailLayersDone];
+		let currentLayer = this._snakingLayers[this._snakingTailLayersDone];
 
 		this._snakingTailLayersDone++;
 
@@ -431,12 +432,12 @@ L.LayerGroup.include({
 			this._initSnakingLayers();
 		}
 
-		for (var id in this._snakeTimeoutsId) {
+		for (let id in this._snakeTimeoutsId) {
 			clearTimeout(id);
 		}
 		this._snakeTimeoutsId = [];
 
-		for(var currentLayer in this._snakingLayers){
+		for(let currentLayer in this._snakingLayers){
 			if(this._snakingLayers[currentLayer] instanceof L.Polyline){
 				this._snakingLayers[currentLayer].snakeReset();
 			}
