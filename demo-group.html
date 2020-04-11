@@ -4,11 +4,11 @@
 	<meta charset="utf-8">
 	<title>Leaflet debug page</title>
 
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
 		  integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
 		  crossorigin=""/>
-	<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
-			integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
+	<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+			integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
 			crossorigin=""></script>
 
 
@@ -22,7 +22,8 @@
         <button onclick='snake()'>SNAKE! IT'S A SNAKE!</button><button onclick='snakeOut()'>SNAKE! GO OUT!</button>
     </div>
     <div>
-        <p>Follow head: <input type="checkbox" id="checkFollowHead" onclick="snakeFollow()">Remove markers: <input type="checkbox" id="checkRemoveMarkers" onclick="snakeRemoveMarkers()"></p>
+        <p><label for="checkFollowHead">Follow head:</label><input type="checkbox" id="checkFollowHead" onclick="snakeFollow()">
+			<label for="checkRemoveMarkers">Remove markers</label><input type="checkbox" id="checkRemoveMarkers" onclick="snakeRemoveMarkers()"></p>
         <button onclick='snakeLaunch()'>LAUNCH A SNAKE!</button><button onclick='snakeReset()'>RESET THE SNAKE!</button>
     </div>
 
@@ -32,7 +33,7 @@
 // 			latlngs.push(new L.LatLng(route[i][0], route[i][1]));
 // 		}
 
-		var trd = [63.5, 11],
+		let trd = [63.5, 11],
 		    mad = [40.5, -3.5],
 		    lnd = [51.5, -0.5],
 		    ams = [52.3, 4.75],
@@ -51,9 +52,9 @@
 			L.marker(vlc)
 		]);
 
-		var map = L.map('map');
+		const map = L.map('map');
 
-		var positron = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+		let positron = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
 			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
 		}).addTo(map);
 
@@ -73,7 +74,7 @@
 			route.snakeOut();
 		}
 
-        var checkBoxHead = document.getElementById("checkFollowHead");
+        let checkBoxHead = document.getElementById("checkFollowHead");
         snakeFollow();
 		function snakeFollow(){
 			route._snakingLayers.forEach(function (layer) {
@@ -88,7 +89,7 @@
 			});
 		}
 
-		var checkRemoveMarkers = document.getElementById("checkRemoveMarkers");
+		let checkRemoveMarkers = document.getElementById("checkRemoveMarkers");
 		snakeRemoveMarkers();
 		function snakeRemoveMarkers(){
 			route.options.snakeRemoveLayers = checkRemoveMarkers.checked;

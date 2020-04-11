@@ -4,11 +4,11 @@
 	<meta charset="utf-8">
 	<title>Leaflet debug page</title>
 
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
 		  integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
 		  crossorigin=""/>
-	<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
-			integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
+	<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+			integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
 			crossorigin=""></script>
 
 
@@ -22,7 +22,7 @@
 		<button onclick='snake()'>SNAKE! IT'S A SNAKE!</button><button onclick='snakeOut()'>SNAKE! GO OUT!</button>
 	</div>
 	<div>
-		<p>Follow head: <input type="checkbox" id="checkFollowHead" onclick="snakeFollow()"></p>
+		<p><label for="checkFollowHead">Follow head: </label><input type="checkbox" id="checkFollowHead" onclick="snakeFollow()"></p>
 		<button onclick='snakeLaunch()'>LAUNCH A SNAKE!</button><button onclick='snakeReset()'>RESET THE SNAKE!</button>
 	</div>
 
@@ -32,8 +32,8 @@
 			latlngs.push(new L.LatLng(route[i][0], route[i][1]));
 		}
 		// Shorter paths for development
-		//var latlngs = [new L.LatLng(51,0), new L.LatLng(52,0), new L.LatLng(52,1), new L.LatLng(51,1), new L.LatLng(51.5,0.5)];
-		/*var latlngs = [
+		//let latlngs = [new L.LatLng(51,0), new L.LatLng(52,0), new L.LatLng(52,1), new L.LatLng(51,1), new L.LatLng(51.5,0.5)];
+		/*let latlngs = [
 			[[45.51, -122.68],
 				[37.77, -122.43],
 				[34.04, -118.2]],
@@ -41,13 +41,13 @@
 				[41.83, -87.62],
 				[32.76, -96.72]]
 		];*/
-		//var len = latlngs.length;
+		//const len = latlngs.length;
 
-		var path = L.polyline(latlngs);
+		let path = L.polyline(latlngs);
 
-		var map = L.map('map');
+		let map = L.map('map');
 
-		var positron = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+		let positron = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
 			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
 		}).addTo(map);
 
@@ -70,7 +70,7 @@
 			path.snakeOut();
 		}
 
-		var checkBoxHead = document.getElementById("checkFollowHead");
+		let checkBoxHead = document.getElementById("checkFollowHead");
 		snakeFollow();
 		function snakeFollow(){
 			path.options.followHead = checkBoxHead.checked; //this can be setup during polyline creation
