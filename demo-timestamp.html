@@ -31,22 +31,23 @@
 	<div>
 		<p><label for="checkFollowHead">Follow head: </label><input type="checkbox" id="checkFollowHead" onclick="snakeFollow()">
 			<label for="checkShowMarker">Show a marker on head</label><input type="checkbox" id="checkShowMarker" onclick="snakeShowMarker()">
-			<label for="checkHideHeadMarker">Hide the head marker at the end</label><input type="checkbox" id="checkHideHeadMarker"></p>
+			<label for="checkHideHeadMarker">Hide the head marker at the end</label><input type="checkbox" id="checkHideHeadMarker" onclick="snakeHideHeadMarkerOnEnd()"></p>
 		<button onclick='snakeLaunch()'>LAUNCH A SNAKE!</button><button onclick='snakeReset()'>RESET THE SNAKE!</button>
 	</div>
 
 	<script src="route.js"></script>
 	<script>
-		let latlngs = [];
+		/*let latlngs = [];
 		for (let i = 0; i < route.length; i++) {
 			latlngs.push(new L.LatLng(route[i][0], route[i][1]));
-		}
+		}*/
 		// Shorter path for development
-		//let latlngs = [new L.LatLng(51,0), new L.LatLng(52,0), new L.LatLng(52,1), new L.LatLng(51,1), new L.LatLng(51.5,0.5)];
+		let latlngs = [new L.LatLng(51,0), new L.LatLng(52,0), new L.LatLng(52,1), new L.LatLng(51,1), new L.LatLng(51.5,0.5)];
+		let timestamps = [[new Date('2020-01-01T00:00:00'), new Date('2020-01-01T00:01:00'), new Date('2020-01-01T00:02:00'), new Date('2020-01-01T00:04:00'), new Date('2020-01-01T00:05:00')]];
 		const len = latlngs.length;
 
-		let path = L.polyline(latlngs);
-
+		let path = L.polyline(latlngs, { snakingTimeSpeed: 100 });
+		path._snakeTimestamps = timestamps;
 		let map = L.map('map');
 
 		let positron = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
@@ -102,12 +103,12 @@
 		}
 
 
-		path.on('snakeInStart snakeOutStart snakeIn snakeOut snakeInEnd snakeOutEnd', function(ev){
+		/*path.on('snakeInStart snakeOutStart snakeIn snakeOut snakeInEnd snakeOutEnd', function(ev){
 			console.log(ev.type);
-		});
+		});*/
 
 		path.on('snakeInStart', function(ev){
-			if(checkBoxShowMarker.checked && !map.hasLayer(headMarker)){
+			if(!map.hasLayer(headMarker)){
 				map.addLayer(headMarker);
 			}
 		});
