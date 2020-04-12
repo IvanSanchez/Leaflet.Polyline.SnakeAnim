@@ -27,12 +27,7 @@
         <button onclick='snakeLaunch()'>LAUNCH A SNAKE!</button><button onclick='snakeReset()'>RESET THE SNAKE!</button>
     </div>
 
-	<script src="route.js"></script>
 	<script>
-// 		for (var i = 0, latlngs = [], len = route.length; i < len; i++) {
-// 			latlngs.push(new L.LatLng(route[i][0], route[i][1]));
-// 		}
-
 		let trd = [63.5, 11],
 		    mad = [40.5, -3.5],
 		    lnd = [51.5, -0.5],
@@ -61,9 +56,6 @@
 
 		map.fitBounds(route.getBounds());
 
-// 		map.addLayer(new L.Marker(latlngs[0]));
-// 		map.addLayer(new L.Marker(latlngs[len - 1]));
-
 		map.addLayer(route);
 
 		function snake() {
@@ -74,19 +66,11 @@
 			route.snakeOut();
 		}
 
-        let checkBoxHead = document.getElementById("checkFollowHead");
-        snakeFollow();
+		let checkBoxHead = document.getElementById("checkFollowHead");
+		let followHead = false;
+		snakeFollow();
 		function snakeFollow(){
-			route._snakingLayers.forEach(function (layer) {
-				if(layer instanceof L.Polyline){ // this can also be setup during polyline creation
-					layer.options.followHead = checkBoxHead.checked;
-				}
-			});
-			route.getLayers().forEach(function (layer) {
-				if(layer instanceof L.Polyline){ // this can also be setup during polyline creation
-					layer.options.followHead = checkBoxHead.checked;
-				}
-			});
+			followHead = checkBoxHead.checked; //this can be setup during polyline creation
 		}
 
 		let checkRemoveMarkers = document.getElementById("checkRemoveMarkers");
@@ -106,10 +90,23 @@
 			route.snakeReset();
 		}
 
-		route.on('snakeInStart snakeOutStart snake snakeInEnd snakeOutEnd', function(ev){
-			console.log(ev.type);
-		});
+		route.on('snakeGroupInStart snakeGroupInNext snakeGroupInEnd snakeGroupOutStart snakeGroupOutNext snakeGroupOutEnd',
+			function(ev){
+				console.log(ev.type);
+			}
+		);
 
+		for(let index in route._layers){
+			if('snakeIn' in route._layers[index]){
+				route._layers[index].on('snakeIn', function(ev){
+					//console.log(ev.type);
+					//console.log(ev);
+					if(followHead){
+						map.setView(ev);
+					}
+				});
+			}
+		};
 
 	</script>
 </body>

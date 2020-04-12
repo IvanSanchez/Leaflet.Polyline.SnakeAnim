@@ -57,9 +57,9 @@ L.Polyline.include({
 		this._latlngs = [[ this._snakeLatLngs[0][0], this._snakeLatLngs[0][0] ]];
 
 		this._update();
+		this.fire('snakeInStart', this._latlngs[0][0]);
 		this._snake();
-		this.fire('snakestart'); // to depreciate
-		this.fire('snakeInStart');
+
 		return this;
 	},
 
@@ -97,11 +97,12 @@ L.Polyline.include({
 		}
 
 		this._update();
-		// Avoid concourant calls to _snake
+		this.fire('snakeOutStart', this._latlngs[0][0]);
+		// Avoid concurrent calls to _snake
 		if(!this._snakingIn){
 			this._snake();
 		}
-		this.fire('snakeOutStart');
+
 		return this;
 	},
 
@@ -110,9 +111,8 @@ L.Polyline.include({
 		if (!this._map) return;
 
 		let now = performance.now();
-		let diff = now - this._snakingTime;	// In milliseconds
-		diff = (diff === 0 ? 0.001 : diff); // avoids low time resolution issues in some browsers
-		let forward = diff * this.options.snakingSpeed / 1000;	// In pixels
+		let timeDiff = now - this._snakingTime;	// In milliseconds
+		timeDiff = (timeDiff === 0 ? 0.001 : timeDiff); // avoids low time resolution issues in some browsers
 		this._snakingTime = now;
 
 		// Chop the head from the previous frame
@@ -125,23 +125,23 @@ L.Polyline.include({
 		}
 
 		if(this._snakingIn){
-			this._snakeHeadForward(forward);
+			this._snakeHeadForward(timeDiff);
 		}
 		if(this._snakingOut){
-			this._snakeTailForward(forward);
+			this._snakeTailForward(timeDiff);
 		}
 
 		this.setLatLngs(this._latlngs);
 		// Animate only if snake in moving
 		if (this._snakingIn || this._snakingOut){
-			this.fire('snake');
 			L.Util.requestAnimFrame(this._snake, this);
 		}
 
 		return this;
 	},
 
-	_snakeHeadForward: function(forward) {
+	_snakeHeadForward: function(timeDiff) {
+		let forward = timeDiff * this.options.snakingSpeed / 1000;	// In pixels
 
 		// Calculate distance from current vertex to next vertex
 		let currPoint = this._map.latLngToContainerPoint(
@@ -190,14 +190,14 @@ L.Polyline.include({
 		// Put a new head in place.
 		let headLatLng = this._map.containerPointToLatLng(headPoint);
 		this._latlngs[ this._snakingRings ].push(headLatLng);
-		if(this.options.followHead){
-			this._map.setView(headLatLng);
-		}
 
+		this.fire('snakeIn', headLatLng);
 		return this;
 	},
 
-	_snakeTailForward: function(forward) {
+	_snakeTailForward: function(timeDiff) {
+		let forward = timeDiff * this.options.snakingSpeed / 1000;	// In pixels
+
 		// Calculate distance from current vertex to next vertex
 		let currPoint = this._map.latLngToContainerPoint(
 			this._snakeLatLngs[ this._snakingTailRings ][ this._snakingTailVertices ]);
@@ -245,6 +245,7 @@ L.Polyline.include({
 		let tailLatLng = this._map.containerPointToLatLng(tailPoint);
 		this._latlngs[ this._snakingTailRings ].unshift(tailLatLng);
 
+		this.fire('snakeOut', tailLatLng);
 		return this;
 	},
 
@@ -255,8 +256,8 @@ L.Polyline.include({
 		if(!this._snakingOut){
 			this.setLatLngs(this._snakeLatLngs);
 		}
-		this.fire('snakeend'); // to depreciate
-		this.fire('snakeInEnd');
+		let lastPath = this._snakeLatLngs[this._snakeLatLngs.length-1];
+		this.fire('snakeInEnd', lastPath[lastPath.length-1]);
 
 		return this;
 	},
@@ -264,7 +265,8 @@ L.Polyline.include({
 	_snakeOutEnd: function() {
 
 		this._snakingOut = false;
-		this.fire('snakeOutEnd');
+		let lastPath = this._snakeLatLngs[this._snakeLatLngs.length-1];
+		this.fire('snakeOutEnd', lastPath[lastPath.length-1]);
 
 		return this;
 	},
@@ -284,8 +286,7 @@ L.Polyline.include({
 
 
 L.Polyline.mergeOptions({
-	snakingSpeed: 200,	// In pixels/sec
-	followHead: false	// center the map on the head
+	snakingSpeed: 200,			// In pixels/sec
 });
 
 
@@ -325,8 +326,7 @@ L.LayerGroup.include({
 			}
 		}
 
-		this.fire('snakestart');
-		this.fire('snakeInStart');
+		this.fire('snakeGroupInStart');
 		return this._snakeHeadNext();
 	},
 
@@ -346,7 +346,7 @@ L.LayerGroup.include({
 		this._snakingOut = true;
 		this._snakingTailLayersDone = 0;
 
-		this.fire('snakeOutStart');
+		this.fire('snakeGroupOutStart');
 		return this._snakeTailNext();
 	},
 
@@ -365,8 +365,7 @@ L.LayerGroup.include({
 		if(!this._snakingIn){ return  this; }
 
 		if (this._snakingLayersDone >= this._snakingLayers.length) {
-			this.fire('snakeend');
-			this.fire('snakeInEnd');
+			this.fire('snakeGroupInEnd');
 			this._snakingIn = false;
 			return;
 		}
@@ -388,8 +387,7 @@ L.LayerGroup.include({
 			this._snakeTimeoutsId.push(setTimeout(this._snakeHeadNext.bind(this), this.options.snakingPause));
 		}
 
-
-		this.fire('snake');
+		this.fire('snakeGroupInNext');
 		return this;
 	},
 
@@ -402,7 +400,7 @@ L.LayerGroup.include({
 		}
 
 		if (this._snakingTailLayersDone >= this._snakingLayers.length) {
-			this.fire('snakeOutEnd');
+			this.fire('snakeGroupOutEnd');
 			this._snakingOut = false;
 			return;
 		}
@@ -420,7 +418,7 @@ L.LayerGroup.include({
 			this._snakeTimeoutsId.push(setTimeout(this._snakeTailNext.bind(this), this.options.snakingPause));
 		}
 
-		this.fire('snake');
+		this.fire('snakeGroupOutNext');
 		return this;
 	},
 
@@ -455,5 +453,5 @@ L.LayerGroup.include({
 
 L.LayerGroup.mergeOptions({
 	snakingPause: 200,
-	snakeRemoveLayers: true // should layers (other than polylines) desapear
+	snakeRemoveLayers: true // should layers (other than polyline) disappear
 });

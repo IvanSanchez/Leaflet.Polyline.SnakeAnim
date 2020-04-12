@@ -26,14 +26,15 @@
 		<button onclick='snakeLaunch()'>LAUNCH A SNAKE!</button><button onclick='snakeReset()'>RESET THE SNAKE!</button>
 	</div>
 
-	<script src="route.js"></script>
 	<script>
-		let latlngs = [];
-		for (let i = 0; i < route.length; i++) {
-			latlngs.push(new L.LatLng(route[i][0], route[i][1]));
-		}
-		// Shorter path for development
-		//let latlngs = [new L.LatLng(51,0), new L.LatLng(52,0), new L.LatLng(52,1), new L.LatLng(51,1), new L.LatLng(51.5,0.5)];
+		let latlngs = [
+			[[45.51, -122.68],
+				[37.77, -122.43],
+				[34.04, -118.2]],
+			[[40.78, -73.91],
+				[41.83, -87.62],
+				[32.76, -96.72]]
+		];
 		const len = latlngs.length;
 
 		let path = L.polyline(latlngs);
@@ -47,8 +48,8 @@
 
 		map.fitBounds(L.latLngBounds(latlngs));
 
-		map.addLayer(L.marker(latlngs[0]));
-		map.addLayer(L.marker(latlngs[len - 1]));
+		map.addLayer(L.marker(latlngs[0][0]));
+		map.addLayer(L.marker(latlngs[len - 1][latlngs[len - 1].length-1]));
 
 		map.addLayer(path);
 
