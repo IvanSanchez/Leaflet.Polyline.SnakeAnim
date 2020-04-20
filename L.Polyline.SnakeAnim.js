@@ -1,12 +1,11 @@
-
-
-
+/*"THE BEER-WARE LICENSE":
+<ivan@sanchezortega.es> originaly wrote this file.
+Later, <pitou.games@gmail.com> enhanced this file, in order to add more feature.
+As long as you retain this notice you can do whatever you want with this stuff. If we meet some day, and you think
+this stuff is worth it, you can buy me a beer in return.*/
 
 ///// FIXME: Use path._rings instead of path._latlngs???
 ///// FIXME: Panic if this._map doesn't exist when called.
-///// FIXME: Implement snakeOut()
-///// FIXME: Implement layerGroup.snakeIn() / Out()
-
 
 L.Polyline.include({
 
@@ -18,20 +17,24 @@ L.Polyline.include({
 	// Yeah, yeah, "rings" semantically only apply to polygons, but L.Polyline
 	// internally uses that nomenclature.
 	_snakingRings: 0,
+	_snakingTailRings: 0,
 	_snakingVertices: 0,
+	_snakingTailVertices: 0,
 
 	// Distance to draw (in screen pixels) since the last vertex
 	_snakingDistance: 0,
+	_snakingTailDistance: 0,
 
-	// Flag
-	_snaking: false,
+	// Flags
+	_snakingIn: false,
+	_snakingOut: false,
 
 
 	/// TODO: accept a 'map' parameter, fall back to addTo() in case
 	/// performance.now is not available.
 	snakeIn: function(){
 
-		if (this._snaking) { return; }
+		if (this._snakingIn || this._snakingOut) { return; }
 
 		if ( !('performance' in window) ||
 		     !('now' in window.performance) ||
@@ -39,7 +42,7 @@ L.Polyline.include({
 			return;
 		}
 
-		this._snaking = true;
+		this._snakingIn = true;
 		this._snakingTime = performance.now();
 		this._snakingVertices = this._snakingRings = this._snakingDistance = 0;
 
@@ -54,48 +57,111 @@ L.Polyline.include({
 		this._latlngs = [[ this._snakeLatLngs[0][0], this._snakeLatLngs[0][0] ]];
 
 		this._update();
+		this.fire('snakeInStart', this._latlngs[0][0]);
 		this._snake();
-		this.fire('snakestart');
+
 		return this;
 	},
 
+	snakeOut: function(){
+
+		if (this._snakingOut) { return; }
+
+		if ( !('performance' in window) ||
+			!('now' in window.performance) ||
+			!this._map) {
+			return;
+		}
+
+		this._snakingOut = true;
+		this._snakingTime = performance.now();
+		this._snakingTailVertices = this._snakingTailRings = this._snakingTailDistance = 0;
+
+		if (!this._snakeLatLngs) {
+			this._snakeLatLngs = L.LineUtil.isFlat(this._latlngs) ?
+				[ this._latlngs ] :
+				this._latlngs ;
+		}
+
+		if(!this._snakingIn){
+			//need to do a deep copy
+			let tempArray = [];
+			let keys = Object.keys(this._snakeLatLngs);
+			for (let i in keys) {
+				tempArray.push([]);
+				this._snakeLatLngs[tempArray.length - 1].forEach(function(entry) {
+					tempArray[tempArray.length - 1].push( [entry.lat, entry.lng] );
+				});
+			}
+			this._latlngs = tempArray;
+		}
+
+		this._update();
+		this.fire('snakeOutStart', this._latlngs[0][0]);
+		// Avoid concurrent calls to _snake
+		if(!this._snakingIn){
+			this._snake();
+		}
+
+		return this;
+	},
 
 	_snake: function(){
+		// If polyline has been removed from the map stop _snakeForward
+		if (!this._map) return;
 
-		var now = performance.now();
-		var diff = now - this._snakingTime;	// In milliseconds
-		var forward = diff * this.options.snakingSpeed / 1000;	// In pixels
+		let now = performance.now();
+		let timeDiff = now - this._snakingTime;	// In milliseconds
+		timeDiff = (timeDiff === 0 ? 0.001 : timeDiff); // avoids low time resolution issues in some browsers
 		this._snakingTime = now;
 
 		// Chop the head from the previous frame
-		this._latlngs[ this._snakingRings ].pop();
+		if(this._snakingIn){
+			this._latlngs[ this._snakingRings ].pop();
+		}
+		// Chop the tail from the previous frame
+		if(this._snakingOut){
+			this._latlngs[ this._snakingTailRings ].shift();
+		}
 
-		return this._snakeForward(forward);
+		if(this._snakingIn){
+			this._snakeHeadForward(timeDiff);
+		}
+		if(this._snakingOut){
+			this._snakeTailForward(timeDiff);
+		}
+
+		this.setLatLngs(this._latlngs);
+		// Animate only if snake in moving
+		if (this._snakingIn || this._snakingOut){
+			L.Util.requestAnimFrame(this._snake, this);
+		}
+
+		return this;
 	},
 
-	_snakeForward: function(forward) {
+	_snakeHeadForward: function(timeDiff) {
+		let forward = timeDiff * this.options.snakingSpeed / 1000;	// In pixels
 
-		// If polyline has been removed from the map stop _snakeForward
-		if (!this._map) return;
 		// Calculate distance from current vertex to next vertex
-		var currPoint = this._map.latLngToContainerPoint(
+		let currPoint = this._map.latLngToContainerPoint(
 			this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices ]);
-		var nextPoint = this._map.latLngToContainerPoint(
+		let nextPoint = this._map.latLngToContainerPoint(
 			this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices + 1 ]);
 
-		var distance = currPoint.distanceTo(nextPoint);
+		let distance = currPoint.distanceTo(nextPoint);
 
-// 		console.log('Distance to next point:', distance, '; Now at: ', this._snakingDistance, '; Must travel forward:', forward);
-// 		console.log('Vertices: ', this._latlngs);
+		//console.log('Distance head to next point:', distance, '; Now at: ', this._snakingDistance, '; Must travel forward:', forward, '_snakingTime', this._snakingTime, '_snakingVertices', this._snakingVertices);
+		//console.log('Snake vertices: ', this._latlngs,';this._snakeLatLngs',this._snakeLatLngs);
 
-		if (this._snakingDistance + forward > distance) {
+		while (this._snakingDistance + forward > distance) {
 			// Jump to next vertex
 			this._snakingVertices++;
 			this._latlngs[ this._snakingRings ].push( this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices ] );
 
 			if (this._snakingVertices >= this._snakeLatLngs[ this._snakingRings ].length - 1 ) {
 				if (this._snakingRings >= this._snakeLatLngs.length - 1 ) {
-					return this._snakeEnd();
+					return this._snakeInEnd();
 				} else {
 					this._snakingVertices = 0;
 					this._snakingRings++;
@@ -106,42 +172,122 @@ L.Polyline.include({
 			}
 
 			this._snakingDistance -= distance;
-			return this._snakeForward(forward);
+			currPoint = this._map.latLngToContainerPoint(
+				this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices ]);
+			nextPoint = this._map.latLngToContainerPoint(
+				this._snakeLatLngs[ this._snakingRings ][ this._snakingVertices + 1]);
+			distance = currPoint.distanceTo(nextPoint);
 		}
 
 		this._snakingDistance += forward;
 
-		var percent = this._snakingDistance / distance;
+		let percent = this._snakingDistance / distance;
 
-		var headPoint = nextPoint.multiplyBy(percent).add(
+		let headPoint = nextPoint.multiplyBy(percent).add(
 			currPoint.multiplyBy( 1 - percent )
 		);
 
 		// Put a new head in place.
-		var headLatLng = this._map.containerPointToLatLng(headPoint);
+		let headLatLng = this._map.containerPointToLatLng(headPoint);
 		this._latlngs[ this._snakingRings ].push(headLatLng);
 
-		this.setLatLngs(this._latlngs);
-		this.fire('snake');
-		L.Util.requestAnimFrame(this._snake, this);
+		this.fire('snakeIn', headLatLng);
+		return this;
 	},
 
-	_snakeEnd: function() {
+	_snakeTailForward: function(timeDiff) {
+		let forward = timeDiff * this.options.snakingSpeed / 1000;	// In pixels
 
-		this.setLatLngs(this._snakeLatLngs);
-		this._snaking = false;
-		this.fire('snakeend');
+		// Calculate distance from current vertex to next vertex
+		let currPoint = this._map.latLngToContainerPoint(
+			this._snakeLatLngs[ this._snakingTailRings ][ this._snakingTailVertices ]);
+		let nextPoint = this._map.latLngToContainerPoint(
+			this._snakeLatLngs[ this._snakingTailRings ][ this._snakingTailVertices + 1 ]);
 
+		let distance = currPoint.distanceTo(nextPoint);
+
+		//console.log('Distance tail to next point:', distance, '; Now at: ', this._snakingTailDistance, '; Must travel forward:', forward, '; _snakingTime', this._snakingTime, '; _snakingTailVertices', this._snakingTailVertices);
+		//console.log('Snake vertices: ', this._latlngs,';this._snakeLatLngs',this._snakeLatLngs);
+
+		while (this._snakingTailDistance + forward > distance) {
+			// Jump to next vertex
+			this._snakingTailVertices++;
+			this._latlngs[this._snakingTailRings].shift();
+
+			if (this._snakingTailVertices >= this._snakeLatLngs[ this._snakingTailRings ].length - 1 ) {
+				if (this._snakingTailRings >= this._snakeLatLngs.length - 1 ) {
+					return this._snakeOutEnd();
+				} else {
+					this._snakingTailVertices = 0;
+					this._latlngs[ this._snakingTailRings ] = [];
+					this._snakingTailRings++;
+					this._latlngs[ this._snakingTailRings ].shift(); // Remove first point of new line
+				}
+			}
+
+			this._snakingTailDistance -= distance;
+			currPoint = this._map.latLngToContainerPoint(
+				this._snakeLatLngs[ this._snakingTailRings ][ this._snakingTailVertices ]);
+			nextPoint = this._map.latLngToContainerPoint(
+				this._snakeLatLngs[this._snakingTailRings ][ this._snakingTailVertices + 1 ]);
+			distance = currPoint.distanceTo(nextPoint);
+		}
+
+		this._snakingTailDistance += forward;
+
+		let percent = this._snakingTailDistance / distance;
+
+		let tailPoint = nextPoint.multiplyBy(percent).add(
+			currPoint.multiplyBy( 1 - percent )
+		);
+
+		// Put a new tail in place.
+		let tailLatLng = this._map.containerPointToLatLng(tailPoint);
+		this._latlngs[ this._snakingTailRings ].unshift(tailLatLng);
+
+		this.fire('snakeOut', tailLatLng);
+		return this;
+	},
+
+
+	_snakeInEnd: function() {
+
+		this._snakingIn = false;
+		if(!this._snakingOut){
+			this.setLatLngs(this._snakeLatLngs);
+		}
+		let lastPath = this._snakeLatLngs[this._snakeLatLngs.length-1];
+		this.fire('snakeInEnd', lastPath[lastPath.length-1]);
+
+		return this;
+	},
+
+	_snakeOutEnd: function() {
+
+		this._snakingOut = false;
+		let lastPath = this._snakeLatLngs[this._snakeLatLngs.length-1];
+		this.fire('snakeOutEnd', lastPath[lastPath.length-1]);
+
+		return this;
+	},
+
+	snakeReset: function () {
+
+		this._snakingIn = this._snakingOut = false;
+		if(this._snakeLatLngs){
+			this.setLatLngs(this._snakeLatLngs);
+		}
+
+		return this;
 	}
 
 });
 
 
+
 L.Polyline.mergeOptions({
-	snakingSpeed: 200	// In pixels/sec
+	snakingSpeed: 200,			// In pixels/sec
 });
-
-
 
 
 
@@ -149,70 +295,163 @@ L.LayerGroup.include({
 
 	_snakingLayers: [],
 	_snakingLayersDone: 0,
+	_snakingTailLayersDone: 0,
+	_snakingIn: false,
+	_snakingOut: false,
+
+	// used to cancel timeouts for snakeReset()
+	_snakeTimeoutsId: [],
 
 	snakeIn: function() {
 
 		if ( !('performance' in window) ||
 		     !('now' in window.performance) ||
 		     !this._map ||
-		     this._snaking) {
+		     this._snakingIn || this._snakingOut) {
 			return;
 		}
 
-
-		this._snaking = true;
-		this._snakingLayers = [];
+		this._snakingIn = true;
 		this._snakingLayersDone = 0;
-		var keys = Object.keys(this._layers);
-		for (var i in keys) {
-			var key = keys[i];
-			this._snakingLayers.push(this._layers[key]);
+		if(this._snakingLayers.length === 0){
+			this._initSnakingLayers();
 		}
-		this.clearLayers();
+		if(this.options.snakeRemoveLayers){
+			this.clearLayers();
+		}else {
+			for(let currentLayer in this._snakingLayers){
+				if(this._snakingLayers[currentLayer] instanceof L.Polyline){ // remove only paths
+					this.removeLayer(this._snakingLayers[currentLayer]);
+				}
+			}
+		}
 
-		this.fire('snakestart');
-		return this._snakeNext();
+		this.fire('snakeGroupInStart');
+		return this._snakeHeadNext();
 	},
 
+	snakeOut: function() {
 
-	_snakeNext: function() {
-
-
-		if (this._snakingLayersDone >= this._snakingLayers.length) {
-			this.fire('snakeend');
-			this._snaking = false;
+		if ( !('performance' in window) ||
+			!('now' in window.performance) ||
+			!this._map ||
+			this._snakingOut) {
 			return;
 		}
 
-		var currentLayer = this._snakingLayers[this._snakingLayersDone];
+		if(!this._snakingIn){
+			snakeReset();
+		}
+
+		this._snakingOut = true;
+		this._snakingTailLayersDone = 0;
+
+		this.fire('snakeGroupOutStart');
+		return this._snakeTailNext();
+	},
+
+	_initSnakingLayers: function() {
+		// Copy layers ref in _snakingLayers
+		let keys = Object.keys(this._layers);
+		for (let i in keys) {
+			let key = keys[i];
+			this._snakingLayers.push(this._layers[key]);
+		}
+		return this;
+	},
+
+	_snakeHeadNext: function() {
+
+		if(!this._snakingIn){ return  this; }
+
+		if (this._snakingLayersDone >= this._snakingLayers.length) {
+			this.fire('snakeGroupInEnd');
+			this._snakingIn = false;
+			return;
+		}
+
+		let currentLayer = this._snakingLayers[this._snakingLayersDone];
 
 		this._snakingLayersDone++;
 
-		this.addLayer(currentLayer);
+		if(!this.getLayer(currentLayer)){ // avoid layer duplications
+			this.addLayer(currentLayer);
+		}
+
 		if ('snakeIn' in currentLayer) {
-			currentLayer.once('snakeend', function(){
-				setTimeout(this._snakeNext.bind(this), this.options.snakingPause);
+			currentLayer.once('snakeInEnd', function(){
+				this._snakeTimeoutsId.push(setTimeout(this._snakeHeadNext.bind(this), this.options.snakingPause));
 			}, this);
 			currentLayer.snakeIn();
 		} else {
-			setTimeout(this._snakeNext.bind(this), this.options.snakingPause);
+			this._snakeTimeoutsId.push(setTimeout(this._snakeHeadNext.bind(this), this.options.snakingPause));
 		}
 
+		this.fire('snakeGroupInNext');
+		return this;
+	},
 
-		this.fire('snake');
+	_snakeTailNext: function() {
+
+		if(!this._snakingOut){ return  this; }
+
+		if(this.options.snakeRemoveLayers) {
+			this.removeLayer(this._snakingLayers[this._snakingTailLayersDone-1]);
+		}
+
+		if (this._snakingTailLayersDone >= this._snakingLayers.length) {
+			this.fire('snakeGroupOutEnd');
+			this._snakingOut = false;
+			return;
+		}
+		let currentLayer = this._snakingLayers[this._snakingTailLayersDone];
+
+		this._snakingTailLayersDone++;
+
+
+		if ('snakeOut' in currentLayer) {
+			currentLayer.once('snakeOutEnd', function(){
+				this._snakeTimeoutsId.push(setTimeout(this._snakeTailNext.bind(this), this.options.snakingPause));
+			}, this);
+			currentLayer.snakeOut();
+		} else {
+			this._snakeTimeoutsId.push(setTimeout(this._snakeTailNext.bind(this), this.options.snakingPause));
+		}
+
+		this.fire('snakeGroupOutNext');
+		return this;
+	},
+
+	snakeReset: function() {
+
+		this._snakingIn = false;
+		this._snakingOut = false;
+		if(this._snakingLayers.length === 0){
+			this._initSnakingLayers();
+		}
+
+		for (let id in this._snakeTimeoutsId) {
+			clearTimeout(id);
+		}
+		this._snakeTimeoutsId = [];
+
+		for(let currentLayer in this._snakingLayers){
+			if(this._snakingLayers[currentLayer] instanceof L.Polyline){
+				this._snakingLayers[currentLayer].snakeReset();
+			}
+			// Maybe we need to keep layer order
+			if(!this.getLayer(this._snakingLayers[currentLayer])){
+				this.addLayer(this._snakingLayers[currentLayer]);
+			}
+		}
 		return this;
 	}
 
 });
 
 
+
 L.LayerGroup.mergeOptions({
-	snakingPause: 200
+	snakingPause: 200,
+	snakeRemoveLayers: true // should layers (other than polyline) disappear
 });
-
-
-
-
-
-
-
